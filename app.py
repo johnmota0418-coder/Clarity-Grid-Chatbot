@@ -4,6 +4,7 @@ import faiss
 import os
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import google.generativeai as genai
 
@@ -26,8 +27,11 @@ with open(metadata_file, "r", encoding="utf-8") as f:
 # --------------------------
 # FastAPI & templates
 # --------------------------
-app = FastAPI()
+app = FastAPI(title="Clarity Grid RAG Chatbot", description="AI-powered electrical grid information chatbot")
 templates = Jinja2Templates(directory="templates")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --------------------------
 # Retrieval function
@@ -61,14 +65,24 @@ def generate_answer(query):
 # --------------------------
 # Routes
 # --------------------------
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "message": "Clarity Grid Chatbot is running"}
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "answer": ""})
+    try:
+        return templates.TemplateResponse("index.html", {"request": request, "answer": ""})
+    except Exception as e:
+        return HTMLResponse(f"<h1>Error loading template: {str(e)}</h1>", status_code=500)
 
 @app.post("/", response_class=HTMLResponse)
 async def chat(request: Request, user_query: str = Form(...)):
-    answer = generate_answer(user_query)
-    return templates.TemplateResponse("index.html", {"request": request, "answer": answer, "query": user_query})
+    try:
+        answer = generate_answer(user_query)
+        return templates.TemplateResponse("index.html", {"request": request, "answer": answer, "query": user_query})
+    except Exception as e:
+        return templates.TemplateResponse("index.html", {"request": request, "answer": f"Error: {str(e)}", "query": user_query})
 
 if __name__ == "__main__":
     import uvicorn
