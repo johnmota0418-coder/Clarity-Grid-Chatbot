@@ -69,3 +69,8 @@ async def home(request: Request):
 async def chat(request: Request, user_query: str = Form(...)):
     answer = generate_answer(user_query)
     return templates.TemplateResponse("index.html", {"request": request, "answer": answer, "query": user_query})
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
