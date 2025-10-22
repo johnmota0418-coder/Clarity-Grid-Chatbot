@@ -1,11 +1,19 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI(title="Clarity Grid Chatbot")
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
-async def root():
-    return {"message": "Hello! Clarity Grid Chatbot is running!", "status": "success"}
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "answer": ""})
+
+@app.post("/")
+async def chat(request: Request, user_query: str = Form(...)):
+    # For now, just echo the question
+    answer = f"You asked: '{user_query}'. Full AI functionality will be added next!"
+    return templates.TemplateResponse("index.html", {"request": request, "answer": answer, "query": user_query})
 
 @app.get("/health")
 async def health():
