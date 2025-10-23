@@ -6,6 +6,7 @@ import json
 import numpy as np
 import faiss
 import google.generativeai as genai
+from sentence_transformers import SentenceTransformer
 
 app = FastAPI(title="Clarity Grid Chatbot")
 templates = Jinja2Templates(directory="templates")
@@ -14,13 +15,18 @@ templates = Jinja2Templates(directory="templates")
 api_key = os.getenv("GOOGLE_AI_API_KEY", "AIzaSyDu_A4_boYS532-NDub0lXnXKjFEXDB_jQ")
 genai.configure(api_key=api_key)
 
+# Load FREE sentence transformer model for query embeddings
+print("📥 Loading FREE embedding model for queries...")
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+print("✅ FREE embedding model loaded")
+
 # Load FAISS index and metadata
 try:
-    index = faiss.read_index("faiss_index.idx")
-    with open("metadata.json", "r", encoding="utf-8") as f:
+    index = faiss.read_index("free_electrical_grid_index.faiss")
+    with open("free_electrical_grid_metadata.json", "r", encoding="utf-8") as f:
         texts = json.load(f)
     RAG_AVAILABLE = True
-    print(f"✅ RAG system loaded: {len(texts)} documents indexed")
+    print(f"✅ FREE RAG system loaded: {len(texts)} electrical transmission lines indexed (FREE embeddings)")
 except Exception as e:
     RAG_AVAILABLE = False
     index = None
@@ -63,24 +69,38 @@ Please provide a clear, informative answer based on the context provided. If the
     except Exception as e:
         return f"Sorry, I encountered an error: {str(e)}"
 
-def retrieve_documents(query, k=3):
-    """Retrieve relevant documents using FAISS similarity search"""
+def retrieve_documents(query, k=5):
+    """Retrieve relevant documents using FAISS similarity search with FREE embeddings"""
     if not RAG_AVAILABLE:
         return []
     
     try:
-        # Get query embedding
-        query_resp = genai.embed_content(
-            model="models/text-embedding-004",
-            content=query
-        )
-        query_vec = np.array(query_resp['embedding']).astype("float32").reshape(1, -1)
+        print(f"🔍 Searching for: {query}")
+        
+        # Get query embedding using same FREE model as data
+        query_embedding = embedding_model.encode([query])
+        query_vec = query_embedding.astype("float32")
+        
+        print(f"📊 Query vector shape: {query_vec.shape}")
+        print(f"📊 Index total vectors: {index.ntotal}")
         
         # Search FAISS index
         distances, indices = index.search(query_vec, k)
-        return [texts[i] for i in indices[0]]
+        
+        # Get relevant documents
+        relevant_docs = []
+        for i, idx in enumerate(indices[0]):
+            if idx < len(texts):
+                doc = texts[idx]
+                distance = distances[0][i]
+                print(f"  📄 Found: {doc['id']} (distance: {distance:.3f})")
+                relevant_docs.append(doc['content'])
+        
+        print(f"✅ Retrieved {len(relevant_docs)} relevant documents")
+        return relevant_docs
+        
     except Exception as e:
-        print(f"Error in document retrieval: {e}")
+        print(f"❌ Error in document retrieval: {e}")
         return []
 
 @app.get("/")
@@ -88,13 +108,16 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "answer": ""})
 
 @app.post("/")
-async def chat(request: Request, user_query: str = Form(...)):
+async def chat(request: Request, query: str = Form(...)):
+    print(f"📝 Received query: {query}")  # Debug log
     try:
-        answer = generate_ai_answer(user_query)
-        return templates.TemplateResponse("index.html", {"request": request, "answer": answer, "query": user_query})
+        answer = generate_ai_answer(query)
+        print(f"✅ Generated answer: {len(answer)} characters")  # Debug log
+        return templates.TemplateResponse("index.html", {"request": request, "answer": answer, "query": query})
     except Exception as e:
         error_msg = f"Error generating response: {str(e)}"
-        return templates.TemplateResponse("index.html", {"request": request, "answer": error_msg, "query": user_query})
+        print(f"❌ Error: {error_msg}")  # Debug log
+        return templates.TemplateResponse("index.html", {"request": request, "answer": error_msg, "query": query})
 
 @app.get("/health")
 async def health():
@@ -109,7 +132,7 @@ async def test_page():
     return """
     <!DOCTYPE html>
     <html>
-        <head><title>Clarity Grid Chatbot</title></head>
+        <head><title>FREE Electrical Grid Assistant - 84K+ Real Lines</title></head>
         <body style="font-family: Arial; margin: 40px;">
             <h1>🤖 Clarity Grid Chatbot</h1>
             <p>✅ Deployment successful!</p>
