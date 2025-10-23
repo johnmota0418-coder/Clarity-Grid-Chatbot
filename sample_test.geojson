@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "name": "test_sample",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 1,
+        "ID": "100511",
+        "TYPE": "AC; OVERHEAD",
+        "STATUS": "IN SERVICE",
+        "OWNER": "NOT AVAILABLE",
+        "VOLTAGE": 115.0,
+        "VOLT_CLASS": "100-161",
+        "SUB_1": "NOT AVAILABLE",
+        "SUB_2": "NOT AVAILABLE",
+        "SHAPE__Len": 79.523415558275801
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-70.9285537, 42.54359],
+            [-70.9284093, 42.5441055]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 2,
+        "ID": "140809",
+        "TYPE": "AC; OVERHEAD",
+        "STATUS": "IN SERVICE",
+        "OWNER": "KINGSPORT POWER CO",
+        "VOLTAGE": 161.0,
+        "VOLT_CLASS": "100-161",
+        "SUB_1": "PHILLIPS BEND",
+        "SUB_2": "JOHN SEVIER",
+        "SHAPE__Len": 24018.5131141538
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-82.961231, 36.3769931],
+            [-82.9608982, 36.3767008]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 3,
+        "ID": "140837",
+        "TYPE": "AC; OVERHEAD",
+        "STATUS": "IN SERVICE",
+        "OWNER": "NIAGARA MOHAWK POWER CORP.",
+        "VOLTAGE": 115.0,
+        "VOLT_CLASS": "100-161",
+        "SUB_1": "TAP140359",
+        "SUB_2": "TAP140373",
+        "SHAPE__Len": 5972.9196136621304
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-75.3340663, 43.0894616],
+            [-75.3342553, 43.0897376]
+          ]
+        ]
+      }
+    }
+  ]
+}

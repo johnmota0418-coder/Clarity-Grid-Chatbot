@@ -1,0 +1,53 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: 'Create and start virtual environment'
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        
+    - name: 'Install dependencies'
+      run: |
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    # Optional: Add testing step here
+    # - name: 'Run tests'
+    #   run: |
+    #     source venv/bin/activate
+    #     python -m pytest
+
+    - name: 'Upload artifact for deployment jobs'
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-app
+        path: |
+          . 
+          !venv/
+
+    - name: 'Deploy to Azure Web App'
+      id: deploy-to-webapp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'clarity-grid-chatbot'  # Replace with your actual App Service name
+        slot-name: 'Production'
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+        package: .

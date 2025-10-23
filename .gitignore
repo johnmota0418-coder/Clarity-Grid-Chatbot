@@ -52,3 +52,17 @@ Thumbs.db
 # Environment variables
 .env.local
 .env.production
+
+# Azure deployment files
+.azure/
+upload_*.ps1
+upload_instructions.ps1
+
+# Large data files (now in Azure Blob Storage)
+*.faiss
+*.idx
+free_electrical_grid_*
+
+# Backup files
+*_backup*
+backup_*/

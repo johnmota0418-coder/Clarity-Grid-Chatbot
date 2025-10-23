@@ -7,6 +7,9 @@ import numpy as np
 import faiss
 import google.generativeai as genai
 from sentence_transformers import SentenceTransformer
+import requests
+import tempfile
+from io import BytesIO
 
 app = FastAPI(title="Clarity Grid Chatbot")
 templates = Jinja2Templates(directory="templates")
@@ -15,16 +18,65 @@ templates = Jinja2Templates(directory="templates")
 api_key = os.getenv("GOOGLE_AI_API_KEY", "AIzaSyDu_A4_boYS532-NDub0lXnXKjFEXDB_jQ")
 genai.configure(api_key=api_key)
 
+# Azure Blob Storage URLs
+BLOB_BASE_URL = "https://itse9cac.blob.core.windows.net/public"
+FAISS_INDEX_URL = f"{BLOB_BASE_URL}/free_electrical_grid_index.faiss"
+METADATA_URL = f"{BLOB_BASE_URL}/free_electrical_grid_metadata.json"
+
+def download_file_from_blob(url, local_path=None):
+    """Download file from Azure Blob Storage"""
+    try:
+        print(f"📥 Downloading from {url}...")
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        
+        if local_path:
+            with open(local_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            return local_path
+        else:
+            return BytesIO(response.content)
+    except Exception as e:
+        print(f"❌ Error downloading {url}: {e}")
+        return None
+
 # Load FREE sentence transformer model for query embeddings
 print("📥 Loading FREE embedding model for queries...")
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 print("✅ FREE embedding model loaded")
 
-# Load FAISS index and metadata
+# Load FAISS index and metadata from Azure Blob Storage
 try:
-    index = faiss.read_index("free_electrical_grid_index.faiss")
-    with open("free_electrical_grid_metadata.json", "r", encoding="utf-8") as f:
-        texts = json.load(f)
+    # Try to load from local files first (for development)
+    if os.path.exists("free_electrical_grid_index.faiss") and os.path.exists("free_electrical_grid_metadata.json"):
+        print("📂 Loading from local files...")
+        index = faiss.read_index("free_electrical_grid_index.faiss")
+        with open("free_electrical_grid_metadata.json", "r", encoding="utf-8") as f:
+            texts = json.load(f)
+    else:
+        print("☁️ Loading from Azure Blob Storage...")
+        # Download FAISS index to temporary file
+        temp_faiss_path = tempfile.mktemp(suffix='.faiss')
+        faiss_file = download_file_from_blob(FAISS_INDEX_URL, temp_faiss_path)
+        if not faiss_file:
+            raise Exception("Failed to download FAISS index")
+        
+        # Download metadata
+        metadata_stream = download_file_from_blob(METADATA_URL)
+        if not metadata_stream:
+            raise Exception("Failed to download metadata")
+        
+        # Load FAISS index
+        index = faiss.read_index(faiss_file)
+        
+        # Load metadata
+        metadata_stream.seek(0)
+        texts = json.load(metadata_stream)
+        
+        # Clean up temp file
+        os.unlink(temp_faiss_path)
+    
     RAG_AVAILABLE = True
     print(f"✅ FREE RAG system loaded: {len(texts)} electrical transmission lines indexed (FREE embeddings)")
 except Exception as e:
