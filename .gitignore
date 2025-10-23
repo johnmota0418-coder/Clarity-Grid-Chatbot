@@ -62,6 +62,7 @@ upload_instructions.ps1
 *.faiss
 *.idx
 free_electrical_grid_*
+Electric-Power-Transmission-Lines.geojson
 
 # Backup files
 *_backup*
